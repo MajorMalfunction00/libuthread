@@ -20,13 +20,15 @@ tests: $(T)/kthread \
 		$(T)/uthread-reenter \
 		$(T)/uthread-empty \
 		$(T)/uthread-vgpr \
-		$(T)/smp-spinlock
+		$(T)/smp-spinlock \
+		$(T)/smp-mutex
 	./$(T)/kthread
 	./$(T)/uthread-create
 	./$(T)/uthread-reenter
 	./$(T)/uthread-empty
 	./$(T)/uthread-vgpr
 	./$(T)/smp-spinlock
+	./$(T)/smp-mutex
 	
 install: | $(L)/libuthread.a
 	cp $(L)/libuthread.a $(INSTALL_DIR)/lib/libuthread.a
@@ -93,6 +95,12 @@ $(T)/smp-spinlock: $(O)/tests-smp-spinlock.o | $(T) $(L)/libuthread.a
 $(O)/tests-smp-spinlock.o: tests/smp-spinlock.c | $(O) $(D)
 	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-smp-spinlock.d"
 
+$(T)/smp-mutex: $(O)/tests-smp-mutex.o | $(T) $(L)/libuthread.a
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(L)/libuthread.a -lpthread
+	
+$(O)/tests-smp-mutex.o: tests/smp-mutex.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-smp-mutex.d"
+	
 clean:
 	rm -rf $(B)/*
 	rm -rf $(O)/*
