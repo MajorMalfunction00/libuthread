@@ -1,0 +1,14 @@
+libuthread: A fiber / coroutine library 
+
+To install, type:
+
+make
+sudo make install
+
+This will also run unit tests.
+
+To configure Valgrind checks, edit include/libuthread/config.h:
+
+#define LIBUTHREAD_USE_VALGRIND 1
+
+For debugging, it is on by default
