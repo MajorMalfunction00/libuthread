@@ -19,12 +19,14 @@ tests: $(T)/kthread \
 		$(T)/uthread-create \
 		$(T)/uthread-reenter \
 		$(T)/uthread-empty \
-		$(T)/uthread-vgpr
+		$(T)/uthread-vgpr \
+		$(T)/smp-spinlock
 	./$(T)/kthread
 	./$(T)/uthread-create
 	./$(T)/uthread-reenter
 	./$(T)/uthread-empty
 	./$(T)/uthread-vgpr
+	./$(T)/smp-spinlock
 	
 install: | $(L)/libuthread.a
 	cp $(L)/libuthread.a $(INSTALL_DIR)/lib/libuthread.a
@@ -34,7 +36,8 @@ install: | $(L)/libuthread.a
 # NOTE: library
 $(L)/libuthread.a: $(O)/linux-mm-page.o \
 		   $(O)/linux-kthread.o \
-		$(O)/linux-uthread-ops.o $(O)/uthread.o | $(L)
+		$(O)/linux-uthread-ops.o $(O)/uthread.o \
+		$(O)/linux-smp-spinlock-asm.o | $(L)
 	$(AR) rcs $@ $^
 
 $(O)/linux-kthread.o: src/linux/kthread.c | $(O) $(D)
@@ -48,6 +51,9 @@ $(O)/linux-uthread-ops.o: src/linux/uthread-ops.S | $(O) $(D)
 	
 $(O)/uthread.o: src/uthread.c | $(O) $(D)
 	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/uthread.d"
+	
+$(O)/linux-smp-spinlock-asm.o: src/linux/smp-spinlock-asm.S | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/linux-smp-spinlock-asm.d"
 
 # NOTE: tests
 
@@ -80,6 +86,12 @@ $(T)/uthread-vgpr: $(O)/tests-uthread-vgpr.o | $(T) $(L)/libuthread.a
 
 $(O)/tests-uthread-vgpr.o: tests/uthread-vgpr.c | $(O) $(D)
 	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-uthread-vgpr.d"
+
+$(T)/smp-spinlock: $(O)/tests-smp-spinlock.o | $(T) $(L)/libuthread.a
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(L)/libuthread.a -lpthread
+
+$(O)/tests-smp-spinlock.o: tests/smp-spinlock.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-smp-spinlock.d"
 
 clean:
 	rm -rf $(B)/*
