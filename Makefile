@@ -15,8 +15,16 @@ ALL_LDFLAGS:=-L$(L) $(LDFLAGS)
 
 all: tests $(L)/libuthread.a
 
-tests: $(T)/kthread 
+tests: $(T)/kthread \
+		$(T)/uthread-create \
+		$(T)/uthread-reenter \
+		$(T)/uthread-empty \
+		$(T)/uthread-vgpr
 	./$(T)/kthread
+	./$(T)/uthread-create
+	./$(T)/uthread-reenter
+	./$(T)/uthread-empty
+	./$(T)/uthread-vgpr
 	
 install: | $(L)/libuthread.a
 	cp $(L)/libuthread.a $(INSTALL_DIR)/lib/libuthread.a
@@ -26,14 +34,20 @@ install: | $(L)/libuthread.a
 # NOTE: library
 $(L)/libuthread.a: $(O)/linux-mm-page.o \
 		   $(O)/linux-kthread.o \
-			| $(L)
+		$(O)/linux-uthread-ops.o $(O)/uthread.o | $(L)
 	$(AR) rcs $@ $^
+
+$(O)/linux-kthread.o: src/linux/kthread.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/linux-kthread.d"
 
 $(O)/linux-mm-page.o: src/linux/mm-page.c | $(O) $(D)
 	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/linux-mm-page.d"
 	
-$(O)/linux-kthread.o: src/linux/kthread.c | $(O) $(D)
-	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/linux-kthread.d"
+$(O)/linux-uthread-ops.o: src/linux/uthread-ops.S | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/linux-uthread-ops.d"
+	
+$(O)/uthread.o: src/uthread.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/uthread.d"
 
 # NOTE: tests
 
@@ -42,6 +56,31 @@ $(T)/kthread: $(O)/tests-kthread.o | $(T) $(L)/libuthread.a
 
 $(O)/tests-kthread.o: tests/kthread.c | $(O) $(D)
 	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-kthread.d"
+
+$(T)/uthread-create: $(O)/tests-uthread-create.o | $(T) $(L)/libuthread.a
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(L)/libuthread.a -lpthread
+	
+$(O)/tests-uthread-create.o: tests/uthread-create.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-uthread-create.d"
+	
+$(T)/uthread-reenter: $(O)/tests-uthread-reenter.o | $(T) $(L)/libuthread.a
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(L)/libuthread.a -lpthread
+	
+$(O)/tests-uthread-reenter.o: tests/uthread-reenter.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-uthread-reenter.d"
+	
+$(T)/uthread-empty: $(O)/tests-uthread-empty.o | $(T) $(L)/libuthread.a
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(L)/libuthread.a -lpthread
+
+$(O)/tests-uthread-empty.o: tests/uthread-empty.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-uthread-empty.d"
+
+$(T)/uthread-vgpr: $(O)/tests-uthread-vgpr.o | $(T) $(L)/libuthread.a
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(L)/libuthread.a -lpthread
+
+$(O)/tests-uthread-vgpr.o: tests/uthread-vgpr.c | $(O) $(D)
+	$(CC) $(ALL_CFLAGS) $(ALL_CPPFLAGS) -c $< -o $@ -MMD -MF "$(D)/tests-uthread-vgpr.d"
+
 clean:
 	rm -rf $(B)/*
 	rm -rf $(O)/*
